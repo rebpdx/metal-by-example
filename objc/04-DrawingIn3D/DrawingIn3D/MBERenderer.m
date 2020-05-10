@@ -1,9 +1,7 @@
 #import "MBERenderer.h"
 #import "MBEMathUtilities.h"
 
-@import Metal;
-@import QuartzCore.CAMetalLayer;
-@import simd;
+@import MetalKit;
 
 static const NSInteger MBEInFlightBufferCount = 3;
 
@@ -32,15 +30,16 @@ typedef struct
 @property (strong) dispatch_semaphore_t displaySemaphore;
 @property (assign) NSInteger bufferIndex;
 @property (assign) float rotationX, rotationY, time;
+@property (strong) id<MTLTexture> depthTexture;
 @end
 
 @implementation MBERenderer
 
-- (instancetype)init
+- (nonnull instancetype)initWithMetalKitView:(nonnull MBEMetalView *) mtkView
 {
     if ((self = [super init]))
     {
-        _device = MTLCreateSystemDefaultDevice();
+        _device = mtkView.device;
         _displaySemaphore = dispatch_semaphore_create(MBEInFlightBufferCount);
         [self makePipeline];
         [self makeBuffers];
@@ -49,10 +48,21 @@ typedef struct
     return self;
 }
 
+- (void)setPassDescriptor:(MTKView*)view RenderPassDescriptor:(MTLRenderPassDescriptor*)passDescriptor
+{
+    passDescriptor.colorAttachments[0].texture = view.currentDrawable.texture;
+    passDescriptor.colorAttachments[0].clearColor = view.clearColor;
+    passDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+    passDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
+
+    passDescriptor.depthAttachment.texture = self.depthTexture;
+    passDescriptor.depthAttachment.clearDepth = 1.0;
+    passDescriptor.depthAttachment.loadAction = MTLLoadActionClear;
+    passDescriptor.depthAttachment.storeAction = MTLStoreActionDontCare;
+}
+
 - (void)makePipeline
 {
-    self.commandQueue = [self.device newCommandQueue];
-
     id<MTLLibrary> library = [self.device newDefaultLibrary];
 
     MTLRenderPipelineDescriptor *pipelineDescriptor = [MTLRenderPipelineDescriptor new];
@@ -122,7 +132,7 @@ typedef struct
     self.time += duration;
     self.rotationX += duration * (M_PI / 2);
     self.rotationY += duration * (M_PI / 3);
-    float scaleFactor = sinf(5 * self.time) * 0.25 + 1;
+    float scaleFactor = sinf(self.time) * 0.25 + 1;
     const vector_float3 xAxis = { 1, 0, 0 };
     const vector_float3 yAxis = { 0, 1, 0 };
     const matrix_float4x4 xRot = matrix_float4x4_rotation(xAxis, self.rotationX);
@@ -133,7 +143,7 @@ typedef struct
     const vector_float3 cameraTranslation = { 0, 0, -5 };
     const matrix_float4x4 viewMatrix = matrix_float4x4_translation(cameraTranslation);
 
-    const CGSize drawableSize = view.metalLayer.drawableSize;
+    const CGSize drawableSize = view.drawableSize;
     const float aspect = drawableSize.width / drawableSize.height;
     const float fov = (2 * M_PI) / 5;
     const float near = 1;
@@ -147,7 +157,7 @@ typedef struct
     memcpy([self.uniformBuffer contents] + uniformBufferOffset, &uniforms, sizeof(uniforms));
 }
 
-- (void)drawInView:(MBEMetalView *)view
+- (void)drawInMTKView:(nonnull MBEMetalView*)view
 {
     dispatch_semaphore_wait(self.displaySemaphore, DISPATCH_TIME_FOREVER);
 
@@ -157,7 +167,14 @@ typedef struct
 
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
 
-    MTLRenderPassDescriptor *passDescriptor = [view currentRenderPassDescriptor];
+    MTLRenderPassDescriptor *passDescriptor = view.currentRenderPassDescriptor;
+    if(passDescriptor == nil)
+        return;
+    
+    // This was moved to MBERenderer because macOS version has the
+    // drawableSizeWillChange call in the Renderer which pushed depthTexture
+    // to the renderer as well
+    [self setPassDescriptor:view RenderPassDescriptor:passDescriptor];
 
     id<MTLRenderCommandEncoder> renderPass = [commandBuffer renderCommandEncoderWithDescriptor:passDescriptor];
     [renderPass setRenderPipelineState:self.renderPipelineState];
@@ -188,4 +205,16 @@ typedef struct
     [commandBuffer commit];
 }
 
+// Using the drawableSizeWillChange this way allows use to resize the macOS window dynamically
+- (void)mtkView:(nonnull MBEMetalView *)view drawableSizeWillChange:(CGSize)size {
+    MTLTextureDescriptor *desc =
+        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
+                                                           width:size.width
+                                                          height:size.height
+                                                       mipmapped:NO];
+    desc.usage = MTLTextureUsageRenderTarget;
+    desc.storageMode = MTLStorageModePrivate;
+
+    _depthTexture = [_device newTextureWithDescriptor:desc];
+}
 @end

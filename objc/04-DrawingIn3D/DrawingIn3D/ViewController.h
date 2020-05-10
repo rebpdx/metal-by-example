@@ -1,7 +1,8 @@
-@import UIKit;
+@import AppKit;
+
 #import "MBERenderer.h"
 
-@interface ViewController : UIViewController
+@interface ViewController : NSViewController
 
 @end
 
