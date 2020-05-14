@@ -23,6 +23,7 @@ development.
  - [02-ClearScreen](https://github.com/rebpdx/metal-by-example/commit/d00928a)
  - [03-DrawingIn2D](https://github.com/rebpdx/metal-by-example/commit/6d09b0e)
  - [04-DrawingIn3D](https://github.com/rebpdx/metal-by-example/commit/aaf2526)
+ - [05-Lighting](https://github.com/rebpdx/metal-by-example/commit/36aecd3)
 
 #### Notable changes so far
 
