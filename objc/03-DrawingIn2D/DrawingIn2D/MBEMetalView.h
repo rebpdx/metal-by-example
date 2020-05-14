@@ -1,6 +1,6 @@
-@import UIKit;
+@import MetalKit;
 
-@interface MBEMetalView : UIView
+@interface MBEMetalView : MTKView
 
 @property (readonly) CAMetalLayer *metalLayer;
 

@@ -1,6 +1,6 @@
-@import UIKit;
+@import AppKit;
 
-@interface ViewController : UIViewController
+@interface ViewController : NSViewController
 
 @end
 

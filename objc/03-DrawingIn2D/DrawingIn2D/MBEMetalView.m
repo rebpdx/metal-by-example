@@ -9,7 +9,9 @@ typedef struct
 } MBEVertex;
 
 @interface MBEMetalView ()
-@property (nonatomic, strong) CADisplayLink *displayLink;
+{
+    CVDisplayLinkRef _displayLink;
+}
 @property (nonatomic, strong) id<MTLDevice> device;
 @property (nonatomic, strong) id<MTLRenderPipelineState> pipeline;
 @property (nonatomic, strong) id<MTLCommandQueue> commandQueue;
@@ -25,7 +27,7 @@ typedef struct
     return [CAMetalLayer class];
 }
 
-- (instancetype)initWithCoder:(NSCoder *)aDecoder
+- (id)initWithCoder:(NSCoder *)aDecoder
 {
     if ((self = [super initWithCoder:aDecoder]))
     {
@@ -33,50 +35,24 @@ typedef struct
         [self makeBuffers];
         [self makePipeline];
     }
-    
+
+    CVDisplayLinkCreateWithCGDisplay(CGMainDisplayID(), &_displayLink);
+    CVDisplayLinkSetOutputCallback(_displayLink, &MyDisplayLinkCallback, (__bridge void*)self);
+    CVDisplayLinkStart(_displayLink);
+
     return self;
 }
 
 - (void)dealloc
 {
-    [_displayLink invalidate];
-}
-
-- (void)didMoveToSuperview
-{
-    [super didMoveToSuperview];
-    if (self.superview)
-    {
-        self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(displayLinkDidFire:)];
-        [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
-    }
-    else
-    {
-        [self.displayLink invalidate];
-        self.displayLink = nil;
-    }
+    CVDisplayLinkRelease(_displayLink);
 }
 
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
-    
-    // During the first layout pass, we will not be in a view hierarchy, so we guess our scale
-    CGFloat scale = [UIScreen mainScreen].scale;
-    
-    // If we've moved to a window by the time our frame is being set, we can take its scale as our own
-    if (self.window)
-    {
-        scale = self.window.screen.scale;
-    }
-    
-    CGSize drawableSize = self.bounds.size;
-    
-    // Since drawable size is in pixels, we need to multiply by the scale to move from points to pixels
-    drawableSize.width *= scale;
-    drawableSize.height *= scale;
-    
-    self.metalLayer.drawableSize = drawableSize;
+
+    self.metalLayer.drawableSize = frame.size;
 }
 
 - (CAMetalLayer *)metalLayer {
@@ -93,7 +69,7 @@ typedef struct
 - (void)makePipeline
 {
     id<MTLLibrary> library = [device newDefaultLibrary];
-    
+
     id<MTLFunction> vertexFunc = [library newFunctionWithName:@"vertex_main"];
     id<MTLFunction> fragmentFunc = [library newFunctionWithName:@"fragment_main"];
 
@@ -101,7 +77,7 @@ typedef struct
     pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
     pipelineDescriptor.vertexFunction = vertexFunc;
     pipelineDescriptor.fragmentFunction = fragmentFunc;
-    
+
     NSError *error = nil;
     _pipeline = [device newRenderPipelineStateWithDescriptor:pipelineDescriptor
                                                        error:&error];
@@ -110,7 +86,7 @@ typedef struct
     {
         NSLog(@"Error occurred when creating render pipeline state: %@", error);
     }
-    
+
     _commandQueue = [device newCommandQueue];
 }
 
@@ -148,15 +124,21 @@ typedef struct
         [commandEncoder setVertexBuffer:self.vertexBuffer offset:0 atIndex:0];
         [commandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
         [commandEncoder endEncoding];
-        
+
         [commandBuffer presentDrawable:drawable];
         [commandBuffer commit];
     }
 }
 
-- (void)displayLinkDidFire:(CADisplayLink *)displayLink
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink,
+                                      const CVTimeStamp* now,
+                                      const CVTimeStamp* outputTime,
+                                      CVOptionFlags flagsIn,
+                                      CVOptionFlags* flagsOut,
+                                      void* displayLinkContext)
 {
-    [self redraw];
+    [(__bridge MBEMetalView*)displayLinkContext redraw];
+    return kCVReturnSuccess;
 }
 
 @end

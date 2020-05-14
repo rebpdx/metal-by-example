@@ -1,8 +1,6 @@
-@import UIKit;
+#import <Cocoa/Cocoa.h>
 
-@interface AppDelegate : UIResponder <UIApplicationDelegate>
-
-@property (strong, nonatomic) UIWindow *window;
+@interface AppDelegate : NSObject <NSApplicationDelegate>
 
 @end
 
