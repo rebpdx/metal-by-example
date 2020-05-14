@@ -7,17 +7,19 @@
 
 @implementation MBEMetalView
 
-+ (id)layerClass
+@synthesize device=device;
+
++ (Class)layerClass
 {
     return [CAMetalLayer class];
 }
 
-- (instancetype)initWithCoder:(NSCoder *)aDecoder
+- (id)initWithCoder:(NSCoder *)aDecoder
 {
     if ((self = [super initWithCoder:aDecoder]))
     {
-        _device = MTLCreateSystemDefaultDevice();
-        self.metalLayer.device = _device;
+        device = MTLCreateSystemDefaultDevice();
+        self.metalLayer.device = device;
         self.metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     }
 
@@ -28,7 +30,7 @@
     return (CAMetalLayer *)self.layer;
 }
 
-- (void)didMoveToWindow
+- (void)draw
 {
     [self redraw];
 }
