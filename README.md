@@ -20,6 +20,7 @@ chapter so that you can diff them in GitHub. If you've already read the material
 or want to better understand some of the differences between iOS and macOS
 development.
 
+ - [02-ClearScreen](https://github.com/rebpdx/metal-by-example/commit/d00928a)
  - [03-DrawingIn2D](https://github.com/rebpdx/metal-by-example/commit/6d09b0e)
  - [04-DrawingIn3D](https://github.com/rebpdx/metal-by-example/commit/aaf2526)
 
