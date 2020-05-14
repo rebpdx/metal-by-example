@@ -54,7 +54,7 @@ struct ProjectedVertex
 };
 
 vertex ProjectedVertex vertex_project(device Vertex *vertices [[buffer(0)]],
-                                      constant Uniforms &uniforms [[buffer(1)]],
+                                      device Uniforms &uniforms [[buffer(1)]],
                                       uint vid [[vertex_id]])
 {
     ProjectedVertex outVert;
