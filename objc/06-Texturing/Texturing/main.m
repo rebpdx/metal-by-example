@@ -1,16 +1,8 @@
-//
-//  main.m
-//  Texturing
-//
-//  Created by Warren Moore on 10/29/15.
-//  Copyright © 2015 Metal by Example. All rights reserved.
-//
+#import <Cocoa/Cocoa.h>
 
-#import <UIKit/UIKit.h>
-#import "AppDelegate.h"
-
-int main(int argc, char * argv[]) {
+int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+        // Setup code that might create autoreleased objects goes here.
     }
+    return NSApplicationMain(argc, argv);
 }

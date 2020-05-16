@@ -16,14 +16,14 @@
                                 mipmapped:(BOOL)mipmapped
                              commandQueue:(id<MTLCommandQueue>)queue
 {
-    UIImage *image = [UIImage imageNamed:imageName];
+    NSImage *image = [NSImage imageNamed:imageName];
 
     if (image == nil)
     {
         return nil;
     }
     
-    CGSize imageSize = CGSizeMake(image.size.width * image.scale, image.size.height * image.scale);
+    CGSize imageSize = CGSizeMake(image.size.width, image.size.height);
     const NSUInteger bytesPerPixel = 4;
     const NSUInteger bytesPerRow = bytesPerPixel * imageSize.width;
     uint8_t *imageData = [self dataForImage:image];
@@ -50,9 +50,10 @@
     return texture;
 }
 
-- (uint8_t *)dataForImage:(UIImage *)image
+- (uint8_t *)dataForImage:(NSImage *)image
 {
-    CGImageRef imageRef = image.CGImage;
+    CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef) [image TIFFRepresentation], NULL);
+    CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, 0, NULL);
     
     // Create a suitable bitmap context for extracting the bits of the image
     const NSUInteger width = CGImageGetWidth(imageRef);

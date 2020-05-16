@@ -1,8 +1,7 @@
 #import "MBEMetalView.h"
 
-@interface MBERenderer : NSObject <MBEMetalViewDelegate>
+@interface MBERenderer : NSObject <MTKViewDelegate>
 
-@property (nonatomic, assign) CGFloat rotationX;
-@property (nonatomic, assign) CGFloat rotationY;
+- (nonnull instancetype)initWithMetalKitView:(nonnull MBEMetalView *) mtkView;
 
 @end
